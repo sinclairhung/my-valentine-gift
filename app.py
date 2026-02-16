@@ -3,99 +3,133 @@ import random
 import base64
 
 # --- 1. 設定網頁基本資訊 ---
-st.set_page_config(page_title="情人節快樂", page_icon="❤️")
+st.set_page_config(page_title="情人節快樂", page_icon="❤️", layout="centered")
 
-# --- 2. 設定背景圖片的函數 (這是網頁專用的魔法) ---
+# --- 2. 設定背景圖片與全域樣式的函數 ---
 def set_bg_hack(main_bg):
-    '''
-    這段程式碼會幫你把圖片設為網頁背景
-    '''
     ext = 'png' if main_bg.endswith('png') else 'jpg'
-    with open(main_bg, "rb") as f:
-        data = f.read()
-    bin_str = base64.b64encode(data).decode()
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background-image: url("data:image/{ext};base64,{bin_str}");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }}
-        /* 讓文字背景變半透明黑，不然會看不清楚 */
-        .stTitle, .stHeader, .stMarkdown {{
-            background-color: rgba(255, 255, 255, 0.7); 
-            padding: 10px;
-            border-radius: 10px;
-            text-align: center;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    try:
+        with open(main_bg, "rb") as f:
+            data = f.read()
+        bin_str = base64.b64encode(data).decode()
+        
+        st.markdown(
+            f"""
+            <style>
+            .stApp {{
+                background-image: url("data:image/{ext};base64,{bin_str}");
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+            }}
+            .stButton>button {{
+                width: 100%;
+                background-color: rgba(0, 0, 0, 0.6);
+                color: white;
+                border: 1px solid #d4af37;
+                border-radius: 20px;
+                font-size: 18px;
+                transition: 0.3s;
+            }}
+            .stButton>button:hover {{
+                background-color: rgba(0, 0, 0, 0.9);
+                border-color: #ffd700;
+                color: #ffd700;
+            }}
+            div[data-testid="stVerticalBlock"] button[kind="primary"] {{
+                background-color: rgba(200, 50, 50, 0.8) !important;
+                border: 1px solid red !important;
+            }}
+            .css-15zrgzn {{display: none}}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    except FileNotFoundError:
+         st.warning("⚠️ 找不到背景圖，請確認 GitHub 上有上傳 bg.jpg 或 bg.png")
 
-# 嘗試讀取背景圖片 (記得圖片要叫 bg.jpg 或 bg.png)
-try:
-    set_bg_hack('bg.jpg') # 如果你的圖是 png，請把這裡改成 'bg.png'
-except:
-    st.warning("⚠️ 找不到背景圖，請確認資料夾內有一張名為 bg.jpg 的圖片")
+set_bg_hack('bg.jpg')
 
-# --- 3. 遊戲邏輯 ---
-
-# 檢查這是第幾次點擊，用來決定按鈕的位置
+# --- 3. 遊戲狀態初始化 ---
+if 'finished' not in st.session_state:
+    st.session_state.finished = False
 if 'click_count' not in st.session_state:
     st.session_state.click_count = 0
 
-if 'finished' not in st.session_state:
-    st.session_state.finished = False
+# --- 4. 遊戲主邏輯 ---
 
-# 標題
-st.title("💖 給最特別的妳 💖")
-st.write("\n") # 空行
-st.write("\n")
+# 標題區塊
+st.markdown(
+    """
+    <div style="background-color: rgba(0, 0, 0, 0.5); padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+        <h1 style="color: white; margin:0; font-family: 'Times New Roman', serif;">💖 給最特別的妳 💖</h1>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
 
-# 如果還沒按到「愛」，就顯示問題
+
 if not st.session_state.finished:
-    st.header("親愛的老婆，妳愛我嗎？")
-    st.write("\n")
+    # 問題區塊
+    st.markdown(
+        """
+        <div style="background-color: rgba(0,0,0,0.4); padding: 10px; border-radius: 10px; text-align: center;">
+            <h2 style="color: #f0f0f0; margin:0;">親愛的老婆，妳愛我嗎？</h2>
+        </div>
+        <br>
+        """, 
+        unsafe_allow_html=True
+    )
     
-    # 這裡我們用兩個「欄位」來放按鈕，這樣才可以左右互換
-    col1, col2 = st.columns(2)
-    
-    # 隨機決定哪個欄位放「愛」，哪個放「不愛」
-    # 每次點擊「不愛」，click_count 就會增加，按鈕就會換位置
-    swap = st.session_state.click_count % 2 != 0
-    
-    if swap:
-        # 這是「不愛」在左邊，「愛」在右邊的情況
-        with col1:
-            if st.button("不愛 💔", key="no_btn_1"):
-                st.session_state.click_count += 1
-                st.rerun() # 重新整理網頁，按鈕位置就會變
-        with col2:
-            if st.button("愛！ ❤️", key="yes_btn_1"):
-                st.session_state.finished = True
-                st.rerun()
-    else:
-        # 這是「愛」在左邊，「不愛」在右邊的情況
-        with col1:
-            if st.button("愛！ ❤️", key="yes_btn_2"):
-                st.session_state.finished = True
-                st.rerun()
-        with col2:
-            if st.button("不愛 💔", key="no_btn_2"):
-                st.session_state.click_count += 1
-                st.rerun() # 重新整理網頁，按鈕位置就會變
+    random_vertical_spacer = random.randint(0, 5)
+    for _ in range(random_vertical_spacer):
+        st.write("") 
 
-# 如果按到了「愛」，顯示結果
-else:
-    st.balloons() # 放氣球
-    st.markdown("### 耶！我就知道妳愛我！ 😘")
-    st.markdown("#### 情人節快樂！")
-    # 這裡可以加一段感性的話
-    st.write("謝謝妳包容我的一切，我們要一直幸福下去喔！")
+    cols = st.columns([1, 1, 1, 1, 1])
+    indices = list(range(5))
+    random.shuffle(indices) 
+    pos1 = indices.pop()
+    pos2 = indices.pop()
     
+    if random.random() > 0.5:
+        yes_pos, no_pos = pos1, pos2
+    else:
+        yes_pos, no_pos = pos2, pos1
+
+    with cols[yes_pos]:
+        if st.button("愛！ ❤️", key=f"yes_btn_{st.session_state.click_count}", type="primary"):
+            st.session_state.finished = True
+            st.rerun()
+
+    with cols[no_pos]:
+        if st.button("不愛 💔", key=f"no_btn_{st.session_state.click_count}"):
+            st.session_state.click_count += 1
+            st.rerun()
+
+else:
+    # --- 成功後的畫面 (修正版) ---
+    st.balloons()
+    st.write("")
+    
+    # 這裡我把所有 HTML 擠在一起，避免因為縮排產生亂碼
+    st.markdown(
+        """
+        <div style="background-color: rgba(20, 20, 20, 0.85); padding: 30px; border-radius: 15px; text-align: center; border: 2px solid #d4af37; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            <h2 style="color: #d4af37; font-family: 'Times New Roman', serif; margin-bottom: 20px;">✨ 耶！我就知道妳愛我！ ✨</h2>
+            <h3 style="color: #f5f5f5; font-weight: normal; margin-bottom: 10px;">情人節快樂！</h3>
+            <hr style="border: 0; height: 1px; background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(212, 175, 55, 0.75), rgba(0, 0, 0, 0)); margin: 20px 0;">
+            <p style="color: #e0e0e0; font-size: 1.1em; line-height: 1.6; font-family: serif;">
+                謝謝妳一直以來的包容與陪伴。<br>
+                未來的日子，我們也要一直幸福地走下去喔！❤️
+            </p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    st.write("")
+    st.write("")
     if st.button("再玩一次"):
         st.session_state.finished = False
         st.session_state.click_count = 0
